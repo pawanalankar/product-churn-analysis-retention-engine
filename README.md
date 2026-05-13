@@ -47,6 +47,55 @@ This project reads the dataset from the repo root:
 
 The CSV file is not modified; all transformations happen on DataFrames in code.
 
+### What the dataset is
+
+This is the widely used **IBM Telco Customer Churn** dataset. Each row represents a single customer and contains:
+
+- Demographics (e.g., `SeniorCitizen`, `Partner`, `Dependents`)
+- Subscribed services (phone, internet, add-ons like `OnlineSecurity`)
+- Billing and contract information (e.g., `Contract`, `PaymentMethod`, `MonthlyCharges`)
+- The churn label (`Churn`) indicating whether the customer left
+
+Concretely, you can read each row as a compact “subscription record” describing:
+
+- Which **core products** the customer has (phone service, internet service type)
+- Which **bundles / add-ons** they opted into (security, backup, device protection, support, streaming)
+- The **commercial terms** they are on (month-to-month vs 1-year vs 2-year contract)
+- The **billing experience** (paperless billing, payment method)
+- What they currently pay per month and how much they have paid in total
+- Whether they ultimately **churned**
+
+The dataset is best understood as a **customer-level snapshot** with tenure (months since signup) acting as the time dimension. It supports both descriptive retention analysis and supervised churn prediction.
+
+### Column glossary (every column)
+
+- **`customerID`**: unique customer identifier. Useful for joins; not a predictive feature.
+- **`gender`**: customer gender (`Female`, `Male`).
+- **`SeniorCitizen`**: whether the customer is a senior citizen (`0`=No, `1`=Yes).
+- **`Partner`**: whether the customer has a partner (`Yes`/`No`).
+- **`Dependents`**: whether the customer has dependents (`Yes`/`No`).
+- **`tenure`**: months with the company (integer; typically 0–72 in this dataset). Strong proxy for lifecycle stage.
+
+- **`PhoneService`**: whether the customer has phone service (`Yes`/`No`).
+- **`MultipleLines`**: whether the customer has multiple phone lines (`Yes`, `No`, `No phone service`).
+
+- **`InternetService`**: type of internet service (`DSL`, `Fiber optic`, `No`).
+- **`OnlineSecurity`**: online security add-on (`Yes`, `No`, `No internet service`).
+- **`OnlineBackup`**: online backup add-on (`Yes`, `No`, `No internet service`).
+- **`DeviceProtection`**: device protection add-on (`Yes`, `No`, `No internet service`).
+- **`TechSupport`**: tech support add-on (`Yes`, `No`, `No internet service`).
+- **`StreamingTV`**: streaming TV service (`Yes`, `No`, `No internet service`).
+- **`StreamingMovies`**: streaming movies service (`Yes`, `No`, `No internet service`).
+
+- **`Contract`**: contract term / commitment (`Month-to-month`, `One year`, `Two year`). Typically a major churn driver.
+- **`PaperlessBilling`**: paperless billing enabled (`Yes`/`No`).
+- **`PaymentMethod`**: payment method (`Electronic check`, `Mailed check`, `Bank transfer (automatic)`, `Credit card (automatic)`).
+
+- **`MonthlyCharges`**: current monthly bill amount (numeric). Often linked to price sensitivity.
+- **`TotalCharges`**: cumulative charges to date (numeric but stored as string in the raw CSV; may contain blanks for very new customers). In this project we coerce to numeric and handle missingness during cleaning.
+
+- **`Churn`**: target label indicating whether the customer churned (`Yes`/`No`, converted to `1/0` in cleaning).
+
 ## How it works (end-to-end)
 
 The pipeline is intentionally modular. Each module in `src/` is responsible for one analytical “question”, and `app.py` stitches them together.
