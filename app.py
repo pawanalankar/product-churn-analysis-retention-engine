@@ -47,6 +47,70 @@ tab_overview, tab_funnel, tab_retention, tab_survival, tab_rfm, tab_model, tab_m
     ["Overview", "Funnel", "Retention", "Survival", "RFM", "Predict & Explain", "CPO Memo"]
 )
 
+with tab_overview:
+    st.subheader("Overview")
+
+    st.markdown(
+        """
+This dashboard is built on a *static snapshot* of customers. The KPIs at the top summarize the cleaned dataset:
+
+- **Customers**: number of rows after cleaning.
+- **Churn rate**: share of customers with `Churn = 1`.
+- **Early churn (≤3m)**: churn rate among customers with `tenure <= 3` months (a proxy for onboarding/activation risk).
+- **TotalCharges missing (raw)**: count of missing/blank `TotalCharges` values in the *raw* CSV before applying the cleaning policy.
+        """
+    )
+
+    st.subheader("Data preview")
+    st.dataframe(df.head(25), width="stretch")
+
+    st.subheader("Churn breakdown by Contract")
+    if "Contract" in df.columns:
+        by_contract = (
+            df.groupby("Contract", dropna=False)
+            .agg(customers=("Churn", "size"), churn_rate=("Churn", "mean"))
+            .reset_index()
+            .sort_values("customers", ascending=False)
+        )
+        st.dataframe(by_contract, width="stretch")
+
+        fig, ax = plt.subplots(figsize=(7, 3))
+        ax.bar(by_contract["Contract"].astype(str), by_contract["churn_rate"].astype(float))
+        ax.set_ylabel("Churn rate")
+        ax.set_xlabel("Contract")
+        ax.set_title("Churn rate by Contract")
+        plt.setp(ax.get_xticklabels(), rotation=15, ha="right")
+        st.pyplot(fig, clear_figure=True)
+    else:
+        st.info("Column 'Contract' not found in dataset.")
+
+    st.subheader("Churn breakdown by tenure bucket")
+    tenure_bins = [0, 3, 6, 12, 24, 48, 72]
+    tenure_labels = [
+        "0-3",
+        "3-6",
+        "6-12",
+        "12-24",
+        "24-48",
+        "48-72",
+    ]
+    tenure_bucket = pd.cut(df["tenure"], bins=tenure_bins, labels=tenure_labels, include_lowest=True, right=True)
+    by_tenure = (
+        df.assign(tenure_bucket=tenure_bucket.astype(str))
+        .groupby("tenure_bucket", dropna=False)
+        .agg(customers=("Churn", "size"), churn_rate=("Churn", "mean"))
+        .reset_index()
+    )
+    st.dataframe(by_tenure, width="stretch")
+
+    fig, ax = plt.subplots(figsize=(8, 3))
+    ax.bar(by_tenure["tenure_bucket"].astype(str), by_tenure["churn_rate"].astype(float))
+    ax.set_ylabel("Churn rate")
+    ax.set_xlabel("Tenure bucket (months)")
+    ax.set_title("Churn rate by tenure bucket")
+    plt.setp(ax.get_xticklabels(), rotation=0)
+    st.pyplot(fig, clear_figure=True)
+
 with tab_funnel:
     st.subheader("Lifecycle Funnel")
     segment_by = st.selectbox("Segment funnel by", ["(none)", "Contract", "InternetService", "PaymentMethod"], index=0)
